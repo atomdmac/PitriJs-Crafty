@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Pitri Life Sim</title>
+	<!-- Styles -->
+	<link rel="stylesheet" type="text/css" href="pitri.css" />
+	<link rel="stylesheet" type="text/css" href="jquery-ui/css/ui-lightness/jquery-ui-1.8.20.custom" />
+	
+	<!-- Scripts -->
+	<script src="jquery.js"></script>
+	<script src="jquery.tools.js"></script>
+	<script src="vector.js"></script>
+	<script src="crafty.js"></script>
+	
+	<script>
+		$().ready(function(){
+			
+			// Configuration.
+			var config = {
+				width: 500, 
+				height: 500,
+				maxAgents: 1,
+				frameRate: 12
+			}
+			
+			// Start Crafty.
+			Crafty.init(config.width, config.height);
+			
+			// --- 
+			// Agent component.
+			Crafty.c("Agent", {
+				
+				// Target entity.
+				target: null,
+				
+				// Current agent behavior.
+				state: "seek",
+				
+				// Max. speed.
+				_maxSpeed: 5,
+				
+				// Max force.
+				_maxForce: 10,
+				
+				// Mass of this Agent.
+				_mass: 10,
+				
+				// Motion vectors.
+				_accel: new Vector(0,0),
+				_velocity: new Vector(0,0),
+				
+				// Current steering vector.
+				_steer: null,
+				
+				/*
+				 * ---
+				 * Steering Behaviors
+				 * --- 
+				 */
+				_seek: function() {
+					var currentPos = new Vector(this.x,this.y);
+					var targetPos = new Vector(this.target.x, this.target.y);
+					
+					var desired = currentPos.sub(targetPos);
+					desired = desired.mult(this._maxSpeed);
+					
+					this._steer = this._velocity.sub(desired);
+					this._steer.trunc(this._maxForce);
+				},
+				_flee: function() {
+					// TODO
+				},
+				
+				_move: function() {
+					// Calculate acceleration.
+					this._accel.x = (this._steer.x / this._mass);
+					this._accel.y = (this._steer.y / this._mass);
+					
+					// Calculate and truncate speed.
+					this._velocity = this._velocity.add(this._accel);
+					this._velocity.trunc(this._maxSpeed);
+					
+					// Move me!
+					this.attr({
+						x: this.x + this._velocity.x,
+						y: this.y + this._velocity.y
+					});
+				},
+				
+				// Iterate!
+				_tick: function(e) {
+					// Calculate steering vector.
+					this["_"+this.state]();
+					
+					// Move the entity.
+					this._move();
+				},
+				
+				// Initialize the agent.
+				agent: function(target /* Entity */) {
+					this.target = target;
+					this.bind("EnterFrame", function(e){
+						this._tick.apply(this, e)
+					});
+				}
+				
+			});
+			
+			// ---
+			// Create a target entity.
+			var target = Crafty.e("2D, DOM, Color")
+								.color("rgb(255,0,0)")
+								.attr( {
+									x:200, 
+									y:200,
+									w:10,
+									h:10
+								})
+			
+			// ---
+			// Entity to handle general user input.
+			var userInput = Crafty.e("2D, DOM, Mouse")
+				.attr({
+					w: config.width,
+					h: config.height,
+					x: 0,
+					y: 0
+				})
+				.bind("Click", function(e) {
+					target.x = e.clientX;
+					target.y = e.clientY;
+				})
+				.bind("KeyDown", function(e) {
+					if(e.key = Crafty.keys.SPACE) {
+						Crafty.pause();
+					}
+				});
+				
+			// ---
+			// Create agent entities.
+			var agentList = [];
+			for(var a=0; a<config.maxAgents; a++) {
+				var newAgent = Crafty.e("2D, DOM, Color, Agent")
+					.color("rgb(0,255,0)")
+					.attr({
+						x: 0, // Crafty.math.randomInt(0, config.width),
+						y: 0, // Crafty.math.randomInt(0, config.height),
+						w: 25,
+						h: 25
+					})
+					.agent(target)
+				
+				// Add agent to the pile!
+				agentList.push(newAgent);
+			}
+			
+		});
+	</script>
+</head>
+<body>
+
+</body>
+</html>
