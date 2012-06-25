@@ -41,14 +41,14 @@ Vector = function Vector(x, y) {
 	// @param v A vector
 	// @return vector
 	this.sub = function Substract(v) {
-			return new Vector(this.x - v.x, this.y - v.y);
+		return new Vector(this.x - v.x, this.y - v.y);
 	}
    
 	// Calculate a vector dot product
 	// @param v A vector
-	// @return The dot product
+	// @return The dot p roduct
 	this.dot = function DotProduct(v) {
-			return (this.x * v.x + this.y * v.y);
+		return (this.x * v.x + this.y * v.y);
 	}
 	
 	// Multiply 2 vectors
@@ -62,9 +62,9 @@ Vector = function Vector(x, y) {
 	// @param void
 	// @return vector
 	this.normalize = function Normalize() {
-			var length = this.len();
-			this.x = this.x / length;
-			this.y = this.y / length;
+		var length = this.len();
+		this.x = this.x / length;
+		this.y = this.y / length;
 	}
    
 	// Calculate the perpendicular vector (normal)
@@ -72,7 +72,7 @@ Vector = function Vector(x, y) {
 	// @param void
 	// @return vector
 	this.perp = function Perp() {
-			return new Vector(-this.y, this.x);
+		return new Vector(-this.y, this.x);
 	}
 	
 	// Create and return a copy of this Vector.

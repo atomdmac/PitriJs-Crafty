@@ -25,6 +25,7 @@
 			
 			// Start Crafty.
 			Crafty.init(config.width, config.height);
+			Crafty.background("rgb(200, 200, 200)");
 			
 			// --- 
 			// Agent component.
@@ -34,7 +35,7 @@
 				target: null,
 				
 				// Current agent behavior.
-				state: "seek",
+				state: "arrival",
 				
 				// Max. speed.
 				_maxSpeed: 5,
@@ -57,6 +58,21 @@
 				 * Steering Behaviors
 				 * --- 
 				 */
+				_arrival: function() {
+					var slowingDistance = 120;
+					var targetOffset = new Vector(this.target.x - this.x, this.target.y - this.y);
+					var distance = targetOffset.len();
+					var rampedSpeed = this._maxSpeed * (distance / slowingDistance)
+					var clippedSpeed = Math.min(rampedSpeed, this._maxSpeed)
+					
+					// TODO: This is very messy.  Clean it up before anyone finds out.
+					var clipxdist = (clippedSpeed / distance);
+					var desiredVelocity = new Vector(clipxdist * targetOffset.x, clipxdist * targetOffset.y);
+					// var desiredVelocity = (clippedSpeed / distance) * targetOffset
+					
+					this._steer = desiredVelocity.sub(this._velocity);
+				},
+				
 				_seek: function() {
 					var currentPos = new Vector(this.x,this.y);
 					var targetPos = new Vector(this.target.x, this.target.y);
@@ -83,12 +99,17 @@
 					// Move me!
 					this.attr({
 						x: this.x + this._velocity.x,
-						y: this.y + this._velocity.y
+						y: this.y + this._velocity.y,
+						// TODO: Fix this rotation code.  It sucks.
+						rotation: Crafty.math.radToDeg(Math.atan2(this._velocity.y, this._velocity.x))
 					});
 				},
 				
 				// Iterate!
 				_tick: function(e) {
+					// Do nothing if paused.
+					// if(Crafty.isPaused()) return;
+					
 					// Calculate steering vector.
 					this["_"+this.state]();
 					
@@ -99,9 +120,10 @@
 				// Initialize the agent.
 				agent: function(target /* Entity */) {
 					this.target = target;
+					this.origin("center");
 					this.bind("EnterFrame", function(e){
-						this._tick.apply(this, e)
-					});
+						this._tick.apply(this, e);
+					})
 				}
 				
 			});
@@ -127,8 +149,10 @@
 					y: 0
 				})
 				.bind("Click", function(e) {
-					target.x = e.clientX;
-					target.y = e.clientY;
+					if(!Crafty.isPaused()) {
+						target.x = e.clientX;
+						target.y = e.clientY;
+					}
 				})
 				.bind("KeyDown", function(e) {
 					if(e.key = Crafty.keys.SPACE) {
@@ -153,6 +177,19 @@
 				// Add agent to the pile!
 				agentList.push(newAgent);
 			}
+			
+			// ---
+			// Create paused text.
+			var pausedText = Crafty.e("2D, DOM, Text")
+				.text("Paused...")
+				.textColor("#0000FF", 1)
+				// TODO: Using jQuery's show/hide methods here instead of Crafty equivilents since they don't seem to work for some reason... Figure out why.
+				.bind("Pause", function() {
+					$(this._element).show();
+				})
+				.bind("Unpause", function() {
+					$(this._element).hide();
+				})
 			
 		});
 	</script>
