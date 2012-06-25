@@ -879,9 +879,18 @@
                 if (this.curTime - nextGameTick > 60 * milliSecPerFrame) {
                     nextGameTick = this.curTime - milliSecPerFrame;
                 }
+				
                 while (this.curTime > nextGameTick) {
                     Crafty.trigger("EnterFrame", { frame: frame++ });
-                    nextGameTick += milliSecPerFrame;
+					
+					// Changed this line because it not only causes performance 
+					// to suck, but it also makes pausing the game behave really
+					// strangely... Basically, it causes the game to jump 30 or
+					// so frames when you pause/unpause it too quickly.  My 
+					// version seems to increase performance so I'mma keep it.
+                    nextGameTick = this.curTime; // += milliSecPerFrame;
+                    // nextGameTick += milliSecPerFrame;
+					
                     loops++;
                 }
                 if (loops) {

@@ -4,7 +4,6 @@
 	<title>Pitri Life Sim</title>
 	<!-- Styles -->
 	<link rel="stylesheet" type="text/css" href="pitri.css" />
-	<link rel="stylesheet" type="text/css" href="jquery-ui/css/ui-lightness/jquery-ui-1.8.20.custom" />
 	
 	<!-- Scripts -->
 	<script src="jquery.js"></script>
@@ -103,6 +102,8 @@
 						// TODO: Fix this rotation code.  It sucks.
 						rotation: Crafty.math.radToDeg(Math.atan2(this._velocity.y, this._velocity.x))
 					});
+					
+					console.log("Moving!");
 				},
 				
 				// Iterate!
@@ -155,7 +156,8 @@
 					}
 				})
 				.bind("KeyDown", function(e) {
-					if(e.key = Crafty.keys.SPACE) {
+					if(e.key == Crafty.keys.SPACE) {
+					console.log("pause NAO!");
 						Crafty.pause();
 					}
 				});
@@ -181,8 +183,12 @@
 			// ---
 			// Create paused text.
 			var pausedText = Crafty.e("2D, DOM, Text")
-				.text("Paused...")
+				.text("PAUSED")
 				.textColor("#0000FF", 1)
+				.attr({
+					x: (config.width/2),
+					y: (config.height/2)
+				})
 				// TODO: Using jQuery's show/hide methods here instead of Crafty equivilents since they don't seem to work for some reason... Figure out why.
 				.bind("Pause", function() {
 					$(this._element).show();
