@@ -10,6 +10,7 @@
 	<script src="jquery.tools.js"></script>
 	<script src="vector.js"></script>
 	<script src="crafty.js"></script>
+	<script src="agent.js"></script>
 	
 	<script>
 		$().ready(function(){
@@ -18,116 +19,13 @@
 			var config = {
 				width: 500, 
 				height: 500,
-				maxAgents: 1,
+				maxAgents: 10,
 				frameRate: 12
 			}
 			
 			// Start Crafty.
 			Crafty.init(config.width, config.height);
 			Crafty.background("rgb(200, 200, 200)");
-			
-			// --- 
-			// Agent component.
-			Crafty.c("Agent", {
-				
-				// Target entity.
-				target: null,
-				
-				// Current agent behavior.
-				state: "arrival",
-				
-				// Max. speed.
-				_maxSpeed: 5,
-				
-				// Max force.
-				_maxForce: 10,
-				
-				// Mass of this Agent.
-				_mass: 10,
-				
-				// Motion vectors.
-				_accel: new Vector(0,0),
-				_velocity: new Vector(0,0),
-				
-				// Current steering vector.
-				_steer: null,
-				
-				/*
-				 * ---
-				 * Steering Behaviors
-				 * --- 
-				 */
-				_arrival: function() {
-					var slowingDistance = 120;
-					var targetOffset = new Vector(this.target.x - this.x, this.target.y - this.y);
-					var distance = targetOffset.len();
-					var rampedSpeed = this._maxSpeed * (distance / slowingDistance)
-					var clippedSpeed = Math.min(rampedSpeed, this._maxSpeed)
-					
-					// TODO: This is very messy.  Clean it up before anyone finds out.
-					var clipxdist = (clippedSpeed / distance);
-					var desiredVelocity = new Vector(clipxdist * targetOffset.x, clipxdist * targetOffset.y);
-					// var desiredVelocity = (clippedSpeed / distance) * targetOffset
-					
-					this._steer = desiredVelocity.sub(this._velocity);
-				},
-				
-				_seek: function() {
-					var currentPos = new Vector(this.x,this.y);
-					var targetPos = new Vector(this.target.x, this.target.y);
-					
-					var desired = currentPos.sub(targetPos);
-					desired = desired.mult(this._maxSpeed);
-					
-					this._steer = this._velocity.sub(desired);
-					this._steer.trunc(this._maxForce);
-				},
-				_flee: function() {
-					// TODO
-				},
-				
-				_move: function() {
-					// Calculate acceleration.
-					this._accel.x = (this._steer.x / this._mass);
-					this._accel.y = (this._steer.y / this._mass);
-					
-					// Calculate and truncate speed.
-					this._velocity = this._velocity.add(this._accel);
-					this._velocity.trunc(this._maxSpeed);
-					
-					// Move me!
-					this.attr({
-						x: this.x + this._velocity.x,
-						y: this.y + this._velocity.y,
-						// TODO: Fix this rotation code.  It sucks.
-						rotation: Crafty.math.radToDeg(Math.atan2(this._velocity.y, this._velocity.x))
-					});
-					
-					console.log("Moving!");
-				},
-				
-				// Iterate!
-				_tick: function(e) {
-					// Do nothing if paused.
-					// if(Crafty.isPaused()) return;
-					
-					// Calculate steering vector.
-					this["_"+this.state]();
-					
-					// Move the entity.
-					this._move();
-				},
-				
-				// Initialize the agent.
-				agent: function(target /* Entity */) {
-					this.target = target;
-					this.origin("center");
-					this.bind("EnterFrame", function(e){
-						this._tick.apply(this, e);
-					})
-				}
-				
-			});
 			
 			// ---
 			// Create a target entity.
@@ -139,6 +37,7 @@
 									w:10,
 									h:10
 								})
+								.origin("center")
 			
 			// ---
 			// Entity to handle general user input.
@@ -157,7 +56,6 @@
 				})
 				.bind("KeyDown", function(e) {
 					if(e.key == Crafty.keys.SPACE) {
-					console.log("pause NAO!");
 						Crafty.pause();
 					}
 				});
@@ -167,14 +65,26 @@
 			var agentList = [];
 			for(var a=0; a<config.maxAgents; a++) {
 				var newAgent = Crafty.e("2D, DOM, Color, Agent")
-					.color("rgb(0,255,0)")
+				
+				newAgent.color("rgb(0,255,0)")
 					.attr({
 						x: 0, // Crafty.math.randomInt(0, config.width),
 						y: 0, // Crafty.math.randomInt(0, config.height),
 						w: 25,
 						h: 25
 					})
-					.agent(target)
+					
+				
+				// Chase the mouse.
+				if(agentList.length == 0) {
+					newAgent.state = "arrival";
+					newAgent.agent(target);
+				}
+				// Chase the last created agent.
+				else {
+					newAgent.state = "pursuit";
+					newAgent.agent(agentList[agentList.length-1]);
+				}
 				
 				// Add agent to the pile!
 				agentList.push(newAgent);
@@ -196,6 +106,7 @@
 				.bind("Unpause", function() {
 					$(this._element).hide();
 				})
+			$(pausedText._element).hide();
 			
 		});
 	</script>
