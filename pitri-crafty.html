@@ -19,13 +19,18 @@
 			var config = {
 				width: 500, 
 				height: 500,
-				maxAgents: 10,
+				maxAgents: 3,
 				frameRate: 12
 			}
 			
 			// Start Crafty.
 			Crafty.init(config.width, config.height);
 			Crafty.background("rgb(200, 200, 200)");
+			
+			
+Crafty.modules({ 'crafty-debug-bar': 'release' }, function () {
+    Crafty.debugBar.show();
+});
 			
 			// ---
 			// Create a target entity.
@@ -76,15 +81,16 @@
 					
 				
 				// Chase the mouse.
-				if(agentList.length == 0) {
-					newAgent.state = "arrival";
+				// if(agentList.length == 0) {
+					newAgent._velocity = new Vector(0.5, 0.5);
+					newAgent.state("wander");
 					newAgent.agent(target);
-				}
+				// }
 				// Chase the last created agent.
-				else {
-					newAgent.state = "pursuit";
-					newAgent.agent(agentList[agentList.length-1]);
-				}
+				// else {
+					// newAgent.state = "pursuit";
+					// newAgent.agent(agentList[agentList.length-1]);
+				// }
 				
 				// Add agent to the pile!
 				agentList.push(newAgent);

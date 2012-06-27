@@ -4,7 +4,7 @@ Crafty.c("Agent", {
 	target: null,
 	
 	// Current agent behavior.
-	state: "pursuit",
+	_state: "pursuit",
 	
 	// Max. speed.
 	_maxSpeed: 5,
@@ -27,6 +27,7 @@ Crafty.c("Agent", {
 	 * Steering Behaviors
 	 * --- 
 	 */
+	
 	_arrival: function(target_pos) {
 		if(!target_pos){
 			target_pos = this.target;
@@ -54,14 +55,20 @@ Crafty.c("Agent", {
 		var currentPos = new Vector(this.x,this.y);
 		var targetPos = new Vector(target_pos.x, target_pos.y);
 		
-		var desired = currentPos.sub(targetPos);
+		// var desired = currentPos.sub(targetPos);
+		var desired = targetPos.sub(currentPos);
+		
+		// Scale the desired velocity vector to maxSpeed.
+		desired.normalize();
 		desired = desired.mult(this._maxSpeed);
 		
-		this._steer = this._velocity.sub(desired);
+		this._steer = desired.sub(this._velocity);
+		// this._steer = this._velocity.sub(desired);
 		this._steer.trunc(this._maxForce);
 	},
 	
 	_pursuit: function() {
+	
 		// If the current target doesn't have a velocity vector, throw an error.
 		if(this.target._velocity == undefined) {
 			throw(new Error("Agent target does not have velocity."));
@@ -73,16 +80,56 @@ Crafty.c("Agent", {
 			this.target.x + this.target._velocity.x,
 			this.target.y + this.target._velocity.y
 		);
+		
 		// TODO: This is a really bad predicter.  Fix it.
 		var radius = this.target.w + 25;
 		nextTargetPos.len(nextTargetPos.len() - radius);
 		
-		// Apply the predicted target position to the arrival steering vector.
-		this._arrival(nextTargetPos);
+		// Apply the predicted target position to the seek steering vector.
+		this._seek(nextTargetPos);
 	},
 	
-	_flee: function() {
+	_flee: function(quary_pos) {
 		// TODO
+	},
+	
+	_wandertheta: null,
+	_wander:function() {
+		// Radius for our "wander circle"
+		var wanderR = 50.0;
+		
+		// Distance for our "wander circle"
+		var wanderD = 60.0;
+		
+		// Randomly change wander theta
+		var change = 0.45;
+		if(this.wandertheta == null) this.wandertheta = 0;
+		this.wandertheta += Crafty.math.randomNumber(-change,change);     
+
+		// Now we have to calculate the new location to steer towards on the wander circle
+		// Start with velocity (if available).
+		var circleloc;
+		if(this._velocity.x>0 && this._velocity.y>0) {
+			circleloc = this._velocity.copy();
+		} else {
+			circleloc = new Vector(Math.random(), Math.random());
+		}
+		
+		// Normalize to get heading
+		circleloc.normalize();
+		
+		// Multiply by distance
+		circleloc = circleloc.mult(wanderD);
+		
+		// Make it relative to boid's location
+		circleloc = circleloc.add(new Vector(this.x, this.y));
+		
+		var circleOffSet = new Vector(wanderR*Math.cos(this.wandertheta),
+										wanderR*Math.sin(this.wandertheta));
+										
+		var newTarget = circleloc.add(circleOffSet);
+		
+		this._seek({x: newTarget.x, y:newTarget.y});
 	},
 	
 	_move: function() {
@@ -109,7 +156,7 @@ Crafty.c("Agent", {
 		// if(Crafty.isPaused()) return;
 		
 		// Calculate steering vector.
-		this["_"+this.state]();
+		this["_"+this._state]();
 		
 		// Move the entity.
 		this._move();
@@ -122,5 +169,15 @@ Crafty.c("Agent", {
 		this.bind("EnterFrame", function(e){
 			this._tick.apply(this, e);
 		})
-	}	
+	},
+	
+	// Set agent's state.
+	state:function(newState) {
+		if(arguments==0) {
+			return this._state;
+		}
+		
+		// Update state.
+		this._state = newState;
+	}
 });
