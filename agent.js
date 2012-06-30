@@ -132,6 +132,15 @@ Crafty.c("Agent", {
 		this._seek({x: newTarget.x, y:newTarget.y});
 	},
 	
+	_checkBorders: function() {
+		if(this.x > 300 || this.x < 0 ) {
+			this._seek({x:300,y:300});
+		}
+		if(this.y > 300 || this.y < 0 ) {
+			this._seek({x:300,y:300});
+		}
+	},
+	
 	_move: function() {
 		// Calculate acceleration.
 		this._accel.x = (this._steer.x / this._mass);
@@ -157,6 +166,9 @@ Crafty.c("Agent", {
 		
 		// Calculate steering vector.
 		this["_"+this._state]();
+		
+		// Account for stage borders.
+		this._checkBorders();
 		
 		// Move the entity.
 		this._move();
