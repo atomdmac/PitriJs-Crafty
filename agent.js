@@ -3,6 +3,9 @@ Crafty.c("Agent", {
 	// Target entity.
 	target: null,
 	
+	// Reference to all other agents.
+	_agents: null,
+	
 	// Current agent behavior.
 	_state: "pursuit",
 	
@@ -27,6 +30,28 @@ Crafty.c("Agent", {
 	 * Steering Behaviors
 	 * --- 
 	 */
+	 
+	// A method that calculates a steering vector towards a target
+	// Takes a second argument, if true, it slows down as it approaches the target
+	_steer: function(target, slowdown) {
+		var steer,
+		desired = target.sub(new Vector(this.x, this.y)),
+		d = desired.len();
+		if (d > 0) {
+			// Two options for desired vector magnitude (1 -- based on distance, 2 -- maxSpeed)
+			if (slowdown && d < 100) {
+				desired.len(this._maxSpeed * (d / 100)); // This damping is somewhat arbitrary
+			} else {
+				desired.len(this._maxSpeed);
+			}
+			steer = desired.sub(this._velocity);
+			steer.len(Math.min(this._maxForce, steer.len()));
+		} else {
+			steer = new Vector(0, 0);
+		}
+		
+		return steer;
+	},
 	
 	_arrival: function(target_pos) {
 		if(!target_pos){
@@ -62,9 +87,9 @@ Crafty.c("Agent", {
 		desired.normalize();
 		desired = desired.mult(this._maxSpeed);
 		
-		this._steer = desired.sub(this._velocity);
+		var steer = desired.sub(this._velocity);
 		// this._steer = this._velocity.sub(desired);
-		this._steer.trunc(this._maxForce);
+		return steer.trunc(this._maxForce);
 	},
 	
 	_pursuit: function() {
@@ -86,7 +111,7 @@ Crafty.c("Agent", {
 		nextTargetPos.len(nextTargetPos.len() - radius);
 		
 		// Apply the predicted target position to the seek steering vector.
-		this._seek(nextTargetPos);
+		return this._seek(nextTargetPos);
 	},
 	
 	_flee: function(quary_pos) {
@@ -102,9 +127,9 @@ Crafty.c("Agent", {
 		var wanderD = 60.0;
 		
 		// Randomly change wander theta
-		var change = 0.45;
-		if(this.wandertheta == null) this.wandertheta = 0;
-		this.wandertheta += Crafty.math.randomNumber(-change,change);     
+		var change = 0.25;
+		if(this._wandertheta == null) this._wandertheta = 0;
+		this._wandertheta += Crafty.math.randomNumber(-change,change);     
 
 		// Now we have to calculate the new location to steer towards on the wander circle
 		// Start with velocity (if available).
@@ -120,31 +145,24 @@ Crafty.c("Agent", {
 		
 		// Multiply by distance
 		circleloc = circleloc.mult(wanderD);
-		
-		// Make it relative to boid's location
+		// Make it relative to agent's location
 		circleloc = circleloc.add(new Vector(this.x, this.y));
 		
-		var circleOffSet = new Vector(wanderR*Math.cos(this.wandertheta),
-										wanderR*Math.sin(this.wandertheta));
+		var circleOffSet = new Vector(wanderR*Math.cos(this._wandertheta),
+										wanderR*Math.sin(this._wandertheta));
 										
 		var newTarget = circleloc.add(circleOffSet);
 		
-		this._seek({x: newTarget.x, y:newTarget.y});
-	},
-	
-	_checkBorders: function() {
-		if(this.x > 300 || this.x < 0 ) {
-			this._seek({x:300,y:300});
-		}
-		if(this.y > 300 || this.y < 0 ) {
-			this._seek({x:300,y:300});
-		}
+		return this._steer(newTarget);
 	},
 	
 	_move: function() {
 		// Calculate acceleration.
-		this._accel.x = (this._steer.x / this._mass);
-		this._accel.y = (this._steer.y / this._mass);
+		var force = new Vector(0,0);
+		force = force.add(this._wander());
+		
+		this._accel.x = force.x / this._mass;
+		this._accel.y = force.y / this._mass;
 		
 		// Calculate and truncate speed.
 		this._velocity = this._velocity.add(this._accel);
@@ -157,19 +175,14 @@ Crafty.c("Agent", {
 			// TODO: Fix this rotation code.  It sucks.
 			rotation: Crafty.math.radToDeg(Math.atan2(this._velocity.y, this._velocity.x))
 		});
+		
+		// Reset acceleration.
+		this._accel.x = 0;
+		this._accel.y = 0;
 	},
 	
 	// Iterate!
 	_tick: function(e) {
-		// Do nothing if paused.
-		// if(Crafty.isPaused()) return;
-		
-		// Calculate steering vector.
-		this["_"+this._state]();
-		
-		// Account for stage borders.
-		this._checkBorders();
-		
 		// Move the entity.
 		this._move();
 	},
