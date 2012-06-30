@@ -1,7 +1,7 @@
 Crafty.c("Agent", {
 	
 	// Target entity.
-	target: null,
+	_targets: null,
 	
 	// Reference to all other agents.
 	_agents: null,
@@ -51,39 +51,55 @@ Crafty.c("Agent", {
 	},
 	
 	_seek: function(target_pos) {
-		if(!target_pos){
-			target_pos = new Vector(this.target.x, this.target.y);
+		// If no target was provided, attempt to use the first Entity in the
+		// this._targets array.
+		if(!target_pos && this._targets.length !== undefined){
+			target_pos = new Vector(this._targets[0].x, this._targets[0].y);
+		} else {
+			throw new Error("Agent._seek failed.  No target was provided.");
 		}
 		
-		var steer = this._steer(target_pos, true);
+		var steer = this._steer(target_pos, false);
 		
 		return steer;
 	},
 	
+	_flee: function(quary_pos) {
+		// TODO
+	},
+	
+	_align: function(targets) {
+		// TODO
+	},
+	
+	_cohesion: function(targets) {
+		// TODO
+	},
+	
+	_separation: function(targets) {
+		// TODO
+	}, 
+	
 	_pursuit: function() {
 	
 		// If the current target doesn't have a velocity vector, throw an error.
-		if(this.target._velocity == undefined) {
+		if(this._target._velocity == undefined) {
 			throw(new Error("Agent target does not have velocity."));
 			return;
 		}
 		
 		// Where do we think the target will be next?
 		var nextTargetPos = new Vector(
-			this.target.x + this.target._velocity.x,
-			this.target.y + this.target._velocity.y
+			this._target.x + this._target._velocity.x,
+			this._target.y + this._target._velocity.y
 		);
 		
 		// TODO: This is a really bad predicter.  Fix it.
-		var radius = this.target.w + 25;
+		var radius = this._target.w + 25;
 		nextTargetPos.len(nextTargetPos.len() - radius);
 		
 		// Apply the predicted target position to the seek steering vector.
 		return this._seek(nextTargetPos);
-	},
-	
-	_flee: function(quary_pos) {
-		// TODO
 	},
 	
 	_wandertheta: null,
@@ -159,8 +175,9 @@ Crafty.c("Agent", {
 	},
 	
 	// Initialize the agent.
-	agent: function(target /* Entity */) {
-		this.target = target;
+	agent: function(targets /* Entity */) {
+		// If only one target was provided, put it in an array.
+		this._targets = [].concat(targets);
 		this.origin("center");
 		this.bind("EnterFrame", function(e){
 			this._tick.apply(this, e);
