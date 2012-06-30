@@ -22,9 +22,6 @@ Crafty.c("Agent", {
 	_accel: new Vector(0,0),
 	_velocity: new Vector(0,0),
 	
-	// Current steering vector.
-	_steer: null,
-	
 	/*
 	 * ---
 	 * Steering Behaviors
@@ -53,43 +50,14 @@ Crafty.c("Agent", {
 		return steer;
 	},
 	
-	_arrival: function(target_pos) {
-		if(!target_pos){
-			target_pos = this.target;
-		}
-		
-		var slowingDistance = 120;
-		var targetOffset = new Vector(target_pos.x - this.x, target_pos.y - this.y);
-		var distance = targetOffset.len();
-		var rampedSpeed = this._maxSpeed * (distance / slowingDistance)
-		var clippedSpeed = Math.min(rampedSpeed, this._maxSpeed)
-		
-		// TODO: This is very messy.  Clean it up before anyone finds out.
-		var clipxdist = (clippedSpeed / distance);
-		var desiredVelocity = new Vector(clipxdist * targetOffset.x, clipxdist * targetOffset.y);
-		// var desiredVelocity = (clippedSpeed / distance) * targetOffset
-		
-		this._steer = desiredVelocity.sub(this._velocity);
-	},
-	
 	_seek: function(target_pos) {
 		if(!target_pos){
-			target_pos = this.target;
+			target_pos = new Vector(this.target.x, this.target.y);
 		}
 		
-		var currentPos = new Vector(this.x,this.y);
-		var targetPos = new Vector(target_pos.x, target_pos.y);
+		var steer = this._steer(target_pos, true);
 		
-		// var desired = currentPos.sub(targetPos);
-		var desired = targetPos.sub(currentPos);
-		
-		// Scale the desired velocity vector to maxSpeed.
-		desired.normalize();
-		desired = desired.mult(this._maxSpeed);
-		
-		var steer = desired.sub(this._velocity);
-		// this._steer = this._velocity.sub(desired);
-		return steer.trunc(this._maxForce);
+		return steer;
 	},
 	
 	_pursuit: function() {
@@ -160,6 +128,9 @@ Crafty.c("Agent", {
 		// Calculate acceleration.
 		var force = new Vector(0,0);
 		force = force.add(this._wander());
+		force.normalize();
+		force = force.add(this._seek());
+		force.normalize();
 		
 		this._accel.x = force.x / this._mass;
 		this._accel.y = force.y / this._mass;
