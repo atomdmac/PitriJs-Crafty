@@ -12,7 +12,7 @@ Pitri contains Agents that wander around inside of a virtual "pitri dish" and in
 Currently Implemented
 =====================
 - Wandering behavior (based on concepts described by Craig Reynolds' "Steering Behaviors for Autonomous Characters"
-- Basic rendering engine (using Canvas)
+- Basic rendering engine (currently using Crafty's DOM component).
 - Unlimited number of agents
 
 Long Term Goals
