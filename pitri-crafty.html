@@ -11,6 +11,7 @@
 	<script src="vector.js"></script>
 	<script src="crafty.js"></script>
 	<script src="agent.js"></script>
+	<script src="flock.js"></script>
 	
 	<script>
 		$().ready(function(){
@@ -67,6 +68,7 @@ Crafty.modules({ 'crafty-debug-bar': 'release' }, function () {
 				
 			// ---
 			// Create agent entities.
+			/*
 			var agentList = [];
 			for(var a=0; a<config.maxAgents; a++) {
 				var newAgent = Crafty.e("2D, DOM, Color, Agent")
@@ -93,7 +95,11 @@ Crafty.modules({ 'crafty-debug-bar': 'release' }, function () {
 				
 				// Add agent to the pile!
 				agentList.push(newAgent);
-			}
+			}*/
+			
+			// ---
+			// Create Flock entity.
+			var flock = Crafty.e("Flock").flock(5, {});
 			
 			// ---
 			// Create paused text.
