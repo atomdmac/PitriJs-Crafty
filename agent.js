@@ -10,7 +10,7 @@ Crafty.c("Agent", {
 	_state: "pursuit",
 	
 	// Max. speed.
-	_maxSpeed: 5,
+	_maxSpeed: 3,
 	
 	// Max force.
 	_maxForce: 10,
@@ -65,19 +65,51 @@ Crafty.c("Agent", {
 	},
 	
 	_flee: function(quary_pos) {
-		// TODO
+		var steer = this._steer(quary_pos, false);
+		steer.x = -steer.x;
+		steer.y = -steer.y;
+		return steer;
 	},
 	
-	_align: function(targets) {
-		// TODO
+	_align: function(agents) {
+		var total = new Vector(0,0);
+		for(a in agents) {
+			total = total.add(agents[a]._velocity);
+		}
+		var avg = total.div(new Vector(agents.length, agents.length));
+		return avg.sub(this._velocity);
 	},
 	
-	_cohesion: function(targets) {
-		// TODO
+	_cohesion: function(agents) {
+		var total = new Vector(0,0);
+		for(var a in agents) {
+			total = total.add(new Vector(agents[a].x, agents[a].y));
+		}
+		var avg = total.div(new Vector(agents.length, agents.length));
+		return this._steer(avg, false);
 	},
 	
-	_separation: function(targets) {
-		// TODO
+	_separation: function(agents) {
+		var totalForce = new Vector(0,0);
+		var agentsInProxy = 0;
+		for(var a in agents) {
+			// Don't consider myself.
+			if(agents[a] == this) continue;
+			
+			// My position and the target's position.
+			var pos = new Vector(this.x, this.y);
+			var tar = new Vector(agents[a].x, agents[a].y);
+			
+			// Determine the distance between us.
+			var distance = pos.sub(tar);
+			
+			if(Math.abs(distance.len()) <= 200) {
+				var steer = this._flee(tar, false);
+				totalForce = totalForce.add(steer);
+				agentsInProxy++;
+			}
+		}
+		return totalForce;
 	}, 
 	
 	_pursuit: function() {
@@ -128,7 +160,7 @@ Crafty.c("Agent", {
 		circleloc.normalize();
 		
 		// Multiply by distance
-		circleloc = circleloc.mult(wanderD);
+		circleloc = circleloc.mult(new Vector(wanderD, wanderD));
 		// Make it relative to agent's location
 		circleloc = circleloc.add(new Vector(this.x, this.y));
 		
@@ -140,12 +172,31 @@ Crafty.c("Agent", {
 		return this._steer(newTarget);
 	},
 	
+	_borders: function() {
+		if (this.x > 500 + this.w) this.x = 0;
+		if (this.x < 0 - this.w) this.x = 500 + this.w;
+		if (this.y > 500 + this.h) this.y = -this.h;
+		if (this.y < 0 - this.h) this.y = 500 + this.h;
+	},
+	
 	_move: function() {
 		// Calculate acceleration.
 		var force = new Vector(0,0);
 		force = force.add(this._wander());
 		force.normalize();
-		force = force.add(this._seek());
+		
+		// Apply separation.
+		force = force.add(this._separation(this._agents));
+		
+		/*
+		// Apply cohesion.
+		force = force.add(this._cohesion(this._agents));
+		
+		// Apply alignment.
+		force = force.add(this._align(this._agents));
+		*/
+		
+		// Normalize.
 		force.normalize();
 		
 		this._accel.x = force.x / this._mass;
@@ -163,25 +214,25 @@ Crafty.c("Agent", {
 			rotation: Crafty.math.radToDeg(Math.atan2(this._velocity.y, this._velocity.x))
 		});
 		
+		// Consider borders.
+		this._borders();
+		
 		// Reset acceleration.
 		this._accel.x = 0;
 		this._accel.y = 0;
 	},
 	
-	// Iterate!
+	// Will be called from Flock component.
 	_tick: function(e) {
 		// Move the entity.
 		this._move();
 	},
 	
 	// Initialize the agent.
-	agent: function(targets /* Entity */) {
+	agent: function(agents /* Entity */) {
 		// If only one target was provided, put it in an array.
-		this._targets = [].concat(targets);
+		this._agents = agents; // [].concat(agents);
 		this.origin("center");
-		this.bind("EnterFrame", function(e){
-			this._tick.apply(this, e);
-		})
 	},
 	
 	// Set agent's state.
