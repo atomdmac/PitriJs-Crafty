@@ -52,8 +52,13 @@ Vector = function Vector(x, y) {
 	}
 	
 	// Multiply 2 vectors
-	this.mult = function Multiply(n) {
-		return new Vector(this.x*n, this.y*n)
+	this.mult = function Multiply(v) {
+		return new Vector(this.x*v.x, this.y*v.y)
+	}
+	
+	// Divide one vector's x/y by another's.
+	this.div = function Divide(v) {
+		return new Vector(this.x/v.x,this.y/v.y);
 	}
    
 	// Normalize the vector
