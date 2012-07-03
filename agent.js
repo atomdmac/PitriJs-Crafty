@@ -103,7 +103,7 @@ Crafty.c("Agent", {
 			// Determine the distance between us.
 			var distance = pos.sub(tar);
 			
-			if(Math.abs(distance.len()) <= 200) {
+			if(Math.abs(distance.len()) <= 100) {
 				var steer = this._flee(tar, false);
 				totalForce = totalForce.add(steer);
 				agentsInProxy++;
@@ -183,11 +183,14 @@ Crafty.c("Agent", {
 		// Calculate acceleration.
 		var force = new Vector(0,0);
 		force = force.add(this._wander());
-		force.normalize();
 		
-		// Apply separation.
-		force = force.add(this._separation(this._agents));
 		
+		// Apply seek;
+		force = force.add(this._steer(new Vector(this._target.x, this._target.y)));
+		
+		// Apply separation (with some very poorly coded weighting.)
+		var sep = force.add(this._separation(this._agents));
+		force = sep.mult(new Vector(5,5));
 		/*
 		// Apply cohesion.
 		force = force.add(this._cohesion(this._agents));
@@ -229,8 +232,9 @@ Crafty.c("Agent", {
 	},
 	
 	// Initialize the agent.
-	agent: function(agents /* Entity */) {
+	agent: function(agents, target /* Entity */) {
 		// If only one target was provided, put it in an array.
+		this._target = target;
 		this._agents = agents; // [].concat(agents);
 		this.origin("center");
 	},
